@@ -404,10 +404,10 @@ const STAGES = [
         opts:["راسب","ناجح","45","خطأ"], answer:0, why:"45 أصغر من 50، فالشرط غلط → يطبع «راسب»."},
       {type:"mcq", q:"شن بيطبع؟", code:'العمر = 15\nif العمر < 13:\n    print("طفل")\nelif العمر < 18:\n    print("مراهق")\nelse:\n    print("كبير")',
         opts:["مراهق","طفل","كبير","خطأ"], answer:0,
-        why:"15 مش أصغر من 13، لكن أصغر من 18 → يطبع «مراهق»."},
+        why:"15 مش أصغر من 13، لكون أصغر من 18 → يطبع «مراهق»."},
       {type:"mcq", q:"شن بيطبع؟", code:'x = 3\nif x > 5:\n    print("A")\nprint("B")',
         opts:["B","A","A و B","ما يطبعش شيء"], answer:0,
-        why:"الشرط غلط فما طبعش A، لكن print(B) برّة الشرط، فيطبع B بس."},
+        why:"الشرط غلط فما طبعش A، لكون print(B) برّة الشرط، فيطبع B بس."},
       {type:"mcq", q:"شن بيطبع؟", code:'عندك_فلوس = True\nif عندك_فلوس:\n    print("اشترِ الآيسكريم")',
         opts:["اشترِ الآيسكريم","ما يطبعش شيء","True","خطأ"], answer:0,
         why:"القيمة True معناها الشرط محقّق طول، فيطبع الجملة."},
@@ -426,13 +426,13 @@ const STAGES = [
         why:"الطقس مشمس (صح)، وجوّه الحرارة > 30 (صح) → يطبع «خذ قبعة وميّة». هذا شرط جوّه شرط (متداخل)."},
       {type:"mcq", q:"بايتي يفوز لو: صحة العدو <= 0 or عنده سلاح سري. صحة العدو = 10، والسلاح السري = True. يفوز؟",
         opts:["إيه، يفوز","لا، يخسر"], answer:0,
-        why:"‏or تكفيها وحدة صح. صحة العدو مش <= 0، لكن عنده السلاح السري (True) → يفوز!"},
+        why:"‏or تكفيها وحدة صح. صحة العدو مش <= 0، لكون عنده السلاح السري (True) → يفوز!"},
       {type:"mcq", q:"لو أول شرط في if طلع صح، هل بايثون يفحص الـ elif اللي بعده؟",
         opts:["لا، يتخطّاه","إيه، يفحصه كله"], answer:0,
         why:"أول ما يلقى شرط صح، ينفّذه ويتجاهل باقي elif و else."},
       {type:"mcq", q:"شن بيطبع؟", code:'نقاط = 80\nif نقاط >= 90:\n    print("ممتاز")\nelif نقاط >= 75:\n    print("جيد جداً")\nelif نقاط >= 50:\n    print("ناجح")\nelse:\n    print("حاول ثاني")',
         opts:["جيد جداً","ممتاز","ناجح","حاول ثاني"], answer:0,
-        why:"80 مش >= 90، لكن >= 75 → يطبع «جيد جداً» ويوقف."},
+        why:"80 مش >= 90، لكون >= 75 → يطبع «جيد جداً» ويوقف."},
       {type:"mcq", q:"باب الذاكرة الأخير 🚪 يفتح لو: عنده المفتاح and الرمز صح. المفتاح = True، الرمز صح = True. يفتح؟",
         opts:["إيه، يفتح الباب!","لا، مقفول"], answer:0,
         why:"الاتنين صح وand محقّقة → بايتي فتح الباب واسترجع كل ذاكرته! 🎉"}
@@ -693,7 +693,7 @@ function openBoard(){
 }
 function renderBoard(arr){
   const list=$("#boardList");
-  if(!arr.length){ list.innerHTML=`<div class="lbempty">🏁 لسه ما فيش نتايج!<br>كن أول واحد يوصل القمة 🥇</div>`; return; }
+  if(!arr.length){ list.innerHTML=`<div class="lbempty">🏁 مزال ما فيش نتايج!<br>كون أول واحد يوصل القمة 🥇</div>`; return; }
   const medals=["🥇","🥈","🥉"]; let html="";
   arr.forEach((p,i)=>{ const me=p.id===DEVICE_ID, cls="lbrow"+(me?" me":"")+(i===0?" top1":""), rank=i<3?medals[i]:(i+1);
     html+=`<div class="${cls}"><div class="lbrank">${rank}</div>
@@ -701,7 +701,7 @@ function renderBoard(arr){
       <div class="lbmeta">دقّة ${p.acc||0}% · ⭐${p.stars||0} · ${p.done||0}/5 مراحل</div></div>
       <div class="lbpts">${p.points}<small> نقطة</small></div></div>`; });
   const myRank=arr.findIndex(p=>p.id===DEVICE_ID)+1;
-  $("#boardSub").innerHTML = myRank>0 ? `ترتيبك الحين: <b style="color:var(--gold2)">#${myRank}</b> من ${arr.length} — يتحدّث مباشرة!` : `${arr.length} مشارك — يتحدّث مباشرة!`;
+  $("#boardSub").innerHTML = myRank>0 ? `ترتيبك توا: <b style="color:var(--gold2)">#${myRank}</b> من ${arr.length} — يتحدّث مباشرة!` : `${arr.length} مشارك — يتحدّث مباشرة!`;
   list.innerHTML=html;
 }
 function escapeHTML(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
