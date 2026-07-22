@@ -231,7 +231,7 @@ h1.title .g{color:var(--gold2);}
         <div class="hint">تقدّمك ونقاطك بيتحفظوا تلقائياً في هذا الجهاز 💾</div>
       </div>
       <div class="center" style="margin-top:18px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
-        <button class="btn" id="startBtn">🎮 يالله نبداو</button>
+        <button class="btn" id="startBtn">🎮 يالله نبدو</button>
         <button class="btn ghost" id="resetBtn" style="display:none;">🔄 بداية جديدة</button>
         <button class="btn ghost" id="startAdminBtn" style="display:none; border-color:var(--red); color:#ffd1d5;">🛠️ لوحة المعلّم</button>
       </div>
@@ -348,7 +348,7 @@ const STAGES = [
       {type:"mcq", q:"بايتي واقف والإشارة خضراء 🟢 — شن يدير؟",
         opts:["يمشي","يوقف","يرجع لور","ينام في وسط الطريق"], answer:0,
         why:"الأخضر معناه امشِ! هكي بايتي ياخذ قرار حسب الحالة."},
-      {type:"mcq", q:"في بايثون، شن الكلمة اللي نبداو بيها الشرط؟",
+      {type:"mcq", q:"في بايثون، شن الكلمة اللي نبدو بيها الشرط؟",
         code:'if الإشارة == "أخضر":\n    امشِ', opts:["if","print","box","go"], answer:0,
         why:"if معناها «لو». نقولو للكمبيوتر: لو تحقّق الشرط، دير كذا."},
       {type:"tf", q:"else معناها: «في كل الحالات الثانية» لو الشرط الأول ما تحقّقش.",
@@ -728,7 +728,7 @@ function refreshStartUI(){
   if(has){ $("#resumeNote").style.display="block";
     $("#resumeNote").innerHTML=`👋 مرحباً برجوعك <b>${S.name||"مستكشف"}</b>! عندك <b>${S.points}</b> نقطة، ووصلت للمرحلة <b>${Math.min(S.unlocked,5)}</b>.`;
     $("#startBtn").textContent="▶ كمّل المغامرة";
-  } else { $("#resumeNote").style.display="none"; $("#startBtn").textContent="🎮 يالله نبداو"; }
+  } else { $("#resumeNote").style.display="none"; $("#startBtn").textContent="🎮 يالله نبدو"; }
 }
 $("#startBtn").onclick=()=>{ sClick(); const nm=$("#nameInput").value.trim(); if(nm) S.name=nm;
   if(!S.name){ toast("✍️ اكتب اسمك الأول!"); $("#nameInput").focus(); return; }
