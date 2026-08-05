@@ -558,13 +558,14 @@ function codeHTML(code){
   return '<div class="code">'+h+'</div>';
 }
 
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;const t=a[i];a[i]=a[j];a[j]=t;}return a;}
 function renderQuestion(){
   const s=STAGES[cur.stage], q=s.questions[cur.idx]; curQ=q;
   const isTF=q.type==="tf";
   curCorrect = isTF ? (q.answer?1:0) : q.answer;
   let optsHTML;
   if(isTF){ optsHTML=`<div class="tf"><div class="opt" data-i="1">✅ صح</div><div class="opt" data-i="0">❌ غلط</div></div>`; }
-  else{ optsHTML='<div class="opts">'+q.opts.map((o,i)=>`<div class="opt" data-i="${i}"><span class="k">${["أ","ب","ج","د"][i]}</span><span>${o}</span></div>`).join("")+'</div>'; }
+  else{ optsHTML='<div class="opts">'+shuffle(q.opts.map((o,i)=>({o,i}))).map((it,pos)=>`<div class="opt" data-i="${it.i}"><span class="k">${["أ","ب","ج","د"][pos]}</span><span>${it.o}</span></div>`).join("")+'</div>'; }
   $("#playCard").innerHTML=`
     <div class="qhead">
       <span class="qtag">${s.emoji} ${s.tag}</span>
