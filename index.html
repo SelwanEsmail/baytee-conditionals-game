@@ -603,8 +603,8 @@ function onQTimeout(){
   $("#nextBtn").style.display="inline-flex"; $("#nextBtn").onclick=()=>{ sClick(); nextStep(); };
 }
 
-const PRAISE=["برافو عليك يا وحش!","تمام التمام!","إجابة سمحة!","عاش يا بطل!","صح مية بالمية!","عقلك يلمع!"];
-const MISS=["ما عليش، هكي نتعلّمو!","قريب، ركّز شوية:","الغلط طريق للصح:","ولا يهمّك، جرّب تتذكّر:"];
+const PRAISE=["عاش عليك يا بطل!","تمام التمام!","إجابة سمحة!","برافو عليك!","صح مية بالمية!","عقلك يلمع!"];
+const MISS=["مش مشكلة، من الغلطة نتعلّموا:","قريبة، ركّز شوية:","الغلط طريق للصح:","ما يهمّك، جرّب تتذكّر:"];
 const rP=()=>PRAISE[Math.random()*PRAISE.length|0], rM=()=>MISS[Math.random()*MISS.length|0];
 
 function registerAnswer(correct, why, el, timedOut){
