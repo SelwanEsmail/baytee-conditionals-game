@@ -447,7 +447,10 @@ const RANKS=[
 
 /* ================= الحالة + الحفظ ================= */
 const KEY="baytee_conditions_game_v1";
-let S={ name:"", points:0, streak:0, bestStreak:0, correct:0, answered:0, stage:0, unlocked:1, stars:{}, done:{} };
+let S={ name:"", points:0, streak:0, bestStreak:0, correct:0, answered:0, stage:0, unlocked:1, stars:{}, done:{}, stagePoints:{}, wrong:{}, mistakes:0, attempted:{} };
+let playing=false;
+function blankState(nm){ return { name:nm||"", points:0, streak:0, bestStreak:0, correct:0, answered:0, stage:0, unlocked:1, stars:{}, done:{}, stagePoints:{}, wrong:{}, mistakes:0, attempted:{} }; }
+function recordMistake(){ cur.mistakes=(cur.mistakes||0)+1; S.mistakes=(S.mistakes||0)+1; const k="s"+cur.stage+"q"+cur.idx; S.wrong[k]=(S.wrong[k]||0)+1; }
 const PTS_CORRECT=10, PTS_STREAK_BONUS=5, STREAK_EVERY=3;
 const QTIME=25, SPEED_BONUS_MAX=8;   // مؤقّت السرعة
 let timerOn = localStorage.getItem("baytee_timer")==="on";   // متوقّف افتراضياً
@@ -468,9 +471,9 @@ function show(id){ stopQTimer(); screens.forEach(x=>$("#"+x).classList.toggle("a
   $("#hud").style.display=(id==="scStart")?"none":"block"; window.scrollTo({top:0,behavior:"smooth"}); }
 
 function updateHUD(){
-  $("#hudPoints").textContent=S.points; $("#hudStreak").textContent=S.streak;
+  $("#hudPoints").textContent=S.points+(playing?cur.gained:0); $("#hudStreak").textContent=S.streak;
   $("#hudStage").textContent=Math.min(S.stage+1,5); $("#hudName").textContent=S.name||"مستكشف";
-  $("#hudBar").style.width=Math.round((S.answered/TOTAL_Q)*100)+"%";
+  $("#hudBar").style.width=Math.round((Object.keys(S.done).length/STAGES.length)*100)+"%";
   $("#hudStreak").parentElement.querySelector(".n").classList.toggle("streak-fire", S.streak>=STREAK_EVERY);
 }
 
@@ -506,19 +509,20 @@ const conf=(function(){ const c=$("#confetti"),x=c.getContext("2d"); let ps=[],o
   return {burst}; })();
 
 /* ================= الخريطة ================= */
-function buildMap(){
+function buildMap(){ playing=false;
   const g=$("#stagesGrid"); g.innerHTML="";
   STAGES.forEach((s,i)=>{
-    const locked=i>S.unlocked-1, done=S.done[i], stars=S.stars[i]||0;
+    const locked=i>S.unlocked-1, done=S.done[i], retry=S.attempted[i]&&!done&&!locked, stars=S.stars[i]||0;
     const card=document.createElement("div");
     card.className="stage-card"+(locked?" locked":"")+(done?" done":"");
+    const badge=locked?'🔒':(done?'✔️':(retry?'⚠️':''));
     card.innerHTML=`<div class="stage-no">${i+1}</div>
-      ${locked?'<div class="lock-badge">🔒</div>':(done?'<div class="lock-badge">✔️</div>':'')}
+      ${badge?`<div class="lock-badge">${badge}</div>`:''}
       <div class="stage-emoji">${s.emoji}</div><h3>${s.title}</h3>
-      <div class="desc">${s.desc}</div>
-      <div class="stars">${stars?'⭐'.repeat(stars)+'☆'.repeat(3-stars):''}</div>`;
+      <div class="desc">${retry?'⚠️ أعدها بدون أي غلطة باش تفتح اللي بعدها':s.desc}</div>
+      <div class="stars">${done?'⭐⭐⭐':(stars?'⭐'.repeat(stars)+'☆'.repeat(3-stars):'')}</div>`;
     if(!locked) card.onclick=()=>{ sClick(); startStage(i); };
-    else card.onclick=()=>toast("🔒 كمّل المرحلة اللي قبلها الأول!");
+    else card.onclick=()=>toast("🔒 عدِّ المرحلة اللي قبلها بدون أي غلطة الأول!");
     g.appendChild(card);
   });
 }
@@ -541,11 +545,11 @@ function startQTimer(){
 function stopQTimer(){ if(qtId){ clearInterval(qtId); qtId=null; } }
 
 /* ================= تشغيل مرحلة ================= */
-let cur={ stage:0, idx:0, gained:0, correctInStage:0, totalInStage:0 };
+let cur={ stage:0, idx:0, gained:0, correctInStage:0, totalInStage:0, mistakes:0 };
 let curCorrect=0, curQ=null;
 
 function startStage(i){
-  cur={ stage:i, idx:0, gained:0, correctInStage:0, totalInStage:STAGES[i].questions.length };
+  cur={ stage:i, idx:0, gained:0, correctInStage:0, totalInStage:STAGES[i].questions.length, mistakes:0 }; playing=true;
   S.stage=i; save(); updateHUD(); show("scPlay"); renderQuestion();
 }
 
@@ -615,14 +619,14 @@ function registerAnswer(correct, why, el, timedOut){
     const speed = timerOn ? Math.round(qtFrac*SPEED_BONUS_MAX) : 0;
     let gained=PTS_CORRECT+speed, streakTxt="";
     if(S.streak>0 && S.streak%STREAK_EVERY===0){ gained+=PTS_STREAK_BONUS; streakTxt=` <span class="pts">+${PTS_STREAK_BONUS} سلسلة 🔥</span>`; }
-    S.points+=gained; cur.gained+=gained;
+    cur.gained+=gained;
     sGood(); conf.burst(24);
     if(el){ const r=el.getBoundingClientRect(); floatCoin(r.left+r.width/2, r.top, "+"+gained+" 🪙"); }
     fb.className="feedback good show";
     fb.innerHTML=`<div class="fi">🎉</div><div class="ft">${rP()} <span class="pts">+${PTS_CORRECT}</span>${speed>0?` <span class="pts">+${speed} سرعة ⚡</span>`:""}${streakTxt}<br><span style="opacity:.92">${why}</span></div>`;
     if(S.streak>=STREAK_EVERY && S.streak%STREAK_EVERY===0) toast(`🔥 سلسلة ${S.streak}! مكافأة +${PTS_STREAK_BONUS}`);
   } else {
-    S.streak=0; sBad();
+    S.streak=0; recordMistake(); sBad();
     fb.className="feedback bad show";
     const head = timedOut ? "⏰ خلص الوقت! المرة الجاية أسرع." : rM();
     fb.innerHTML=`<div class="fi">${timedOut?"⏰":"💡"}</div><div class="ft">${head}<br><span style="opacity:.95">${why}</span></div>`;
@@ -636,19 +640,32 @@ function nextStep(){
   finishStage();
 }
 function finishStage(){
-  const i=cur.stage, acc=cur.correctInStage/cur.totalInStage;
-  const stars = acc>=1?3: acc>=0.7?2:1;
-  if((S.stars[i]||0)<stars) S.stars[i]=stars;
-  S.done[i]=true; if(S.unlocked<i+2) S.unlocked=Math.min(i+2,STAGES.length);
-  save(); updateHUD(); submitScore(); sWin(); conf.burst(70);
-  $("#stageDoneStars").textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
-  $("#stageDoneTitle").textContent=`كمّلت مرحلة: ${STAGES[i].title}!`;
-  const msgs=["بايتي بدا يقرّر بروحه بفضلك! 💜","خطوة سمحة، بايتي يتعلّم القرار 🚀","عاش! جزء ثاني من عقل بايتي رجع 🧠"];
-  $("#stageDoneMsg").textContent=(i<STAGES.length-1)?msgs[i%msgs.length]:"بايتي فتح باب الذاكرة الأخير بفضلك! 🎊";
-  $("#stageDonePts").textContent=cur.gained;
+  const i=cur.stage; playing=false;
+  const perfect=(cur.mistakes||0)===0;
+  const old=S.stagePoints[i]||0;
+  if(cur.gained>old){ S.points += (cur.gained-old); S.stagePoints[i]=cur.gained; }
+  if(perfect){ S.done[i]=true; S.stars[i]=3; if(S.unlocked<i+2) S.unlocked=Math.min(i+2,STAGES.length); }
+  else { S.attempted[i]=true; }
+  save(); updateHUD(); submitScore();
   const last=i>=STAGES.length-1;
-  $("#nextStageBtn").textContent=last?"🏆 شوف نتيجتك":"المرحلة التالية ▶";
-  $("#nextStageBtn").onclick=()=>{ sClick(); if(last) showEnd(); else { const nx=i+1; if(nx<=S.unlocked-1) startStage(nx); else { buildMap(); show("scMap"); } } };
+  if(perfect){
+    sWin(); conf.burst(70);
+    $("#stageDoneStars").textContent='⭐⭐⭐';
+    $("#stageDoneTitle").textContent=`أتقنت مرحلة: ${STAGES[i].title}! 💯`;
+    const msgs=["نظيفة 100%! بايتي يقرّر بروحه بدون غلطة 💜","عاش! مرحلة كاملة بدون أي غلطة 🚀","صفر أغلاط — جزء من عقل بايتي رجع 🧠"];
+    $("#stageDoneMsg").textContent=(i<STAGES.length-1)?msgs[i%msgs.length]:"بايتي فتح باب الذاكرة الأخير بدون غلطة! 🎊";
+    $("#stageDonePts").textContent=cur.gained;
+    $("#nextStageBtn").textContent=last?"🏆 شوف نتيجتك":"المرحلة التالية ▶";
+    $("#nextStageBtn").onclick=()=>{ sClick(); if(last) showEnd(); else { const nx=i+1; if(nx<=S.unlocked-1) startStage(nx); else { buildMap(); show("scMap"); } } };
+  } else {
+    sBad();
+    $("#stageDoneStars").textContent='⚠️';
+    $("#stageDoneTitle").textContent=`غلطت ${cur.mistakes} ${cur.mistakes===1?'غلطة':'أغلاط'} في المرحلة`;
+    $("#stageDoneMsg").innerHTML=`عشان تفتح المرحلة الجاية لازم تعدّي هذي <b>بدون أي غلطة (100%)</b>. حاول مرة ثانية — تقدر عليها! 💪`;
+    $("#stageDonePts").textContent=cur.gained;
+    $("#nextStageBtn").textContent="🔁 أعد المرحلة";
+    $("#nextStageBtn").onclick=()=>{ sClick(); startStage(i); };
+  }
   show("scStageDone");
 }
 
@@ -677,8 +694,8 @@ function showEnd(){
 function submitScore(){
   if(!fbReady||!S.name) return;
   try{ const accPct=S.answered?Math.round((S.correct/S.answered)*100):0, stars=Object.values(S.stars).reduce((a,b)=>a+b,0);
-    db.ref("boards/"+CLASS_ID+"/"+DEVICE_ID).transaction(c=>{ if(c&&c.points>=S.points) return c;
-      return {name:S.name,points:S.points,acc:accPct,stars:stars,done:Object.keys(S.done).length,ts:Date.now()}; });
+    db.ref("boards/"+CLASS_ID+"/"+DEVICE_ID).transaction(c=>{ const b=c||{};
+      return {name:S.name, points:Math.max(b.points||0,S.points), acc:accPct, stars:stars, done:Object.keys(S.done).length, mistakes:S.mistakes||0, wrong:S.wrong||{}, ts:Date.now()}; });
   }catch(e){ console.warn("submit:",e.message); }
 }
 let boardListening=false;
@@ -692,14 +709,18 @@ function openBoard(){
     }, ()=>{ list.innerHTML=`<div class="lbempty">⚠️ ما قدرناش نقرا الترتيب. تأكّدي من قواعد قاعدة البيانات.</div>`; });
   }
 }
+function wrongDetail(w){ if(!w) return ""; const ks=Object.keys(w); if(!ks.length) return '<span style="color:var(--ok)">✔ بدون أغلاط</span>'; return ks.map(k=>{ const m=k.match(/s(\d+)q(\d+)/); const si=m?(+m[1])+1:'?', ti=m?(+m[2])+1:'?'; return `<span style="color:#ffb0b6">مرحلة ${si}·سؤال ${ti}: ${w[k]}×</span>`; }).join(" · "); }
 function renderBoard(arr){
-  const list=$("#boardList");
+  const list=$("#boardList"); const isAdmin=(location.hash||"").toLowerCase().indexOf("admin")>=0;
   if(!arr.length){ list.innerHTML=`<div class="lbempty">🏁 مزال ما فيش نتايج!<br>كون أول واحد يوصل القمة 🥇</div>`; return; }
   const medals=["🥇","🥈","🥉"]; let html="";
+  if(isAdmin){ const clean=arr.slice().sort((a,b)=>((a.mistakes||0)-(b.mistakes||0))||((b.points||0)-(a.points||0)))[0];
+    html+=`<div style="background:rgba(46,204,113,.14);border:2px solid var(--ok);border-radius:12px;padding:10px 14px;margin-bottom:10px;font-weight:800">🏅 <b>الأنظف:</b> ${escapeHTML(clean.name||"—")} — <b>${clean.mistakes||0}</b> أغلاط · <b>${clean.points||0}</b> نقطة<br><span style="font-size:12px;color:#a9b8cc">وضع المعلّم: يبان لكل طالب عدد أغلاطه ووين غلط 👇</span></div>`; }
   arr.forEach((p,i)=>{ const me=p.id===DEVICE_ID, cls="lbrow"+(me?" me":"")+(i===0?" top1":""), rank=i<3?medals[i]:(i+1);
+    const adminLine=isAdmin?`<div class="lbmeta" style="margin-top:4px">❌ <b style="color:#ff9aa0">${p.mistakes||0}</b> أغلاط · ${wrongDetail(p.wrong)}</div>`:"";
     html+=`<div class="${cls}"><div class="lbrank">${rank}</div>
       <div style="flex:1; min-width:0;"><div class="lbname">${escapeHTML(p.name||"مستكشف")}${me?'<span class="metag">أنت</span>':''}</div>
-      <div class="lbmeta">دقّة ${p.acc||0}% · ⭐${p.stars||0} · ${p.done||0}/5 مراحل</div></div>
+      <div class="lbmeta">⭐${p.stars||0} · ${p.done||0}/5 مراحل متقنة</div>${adminLine}</div>
       <div class="lbpts">${p.points}<small> نقطة</small></div></div>`; });
   const myRank=arr.findIndex(p=>p.id===DEVICE_ID)+1;
   $("#boardSub").innerHTML = myRank>0 ? `ترتيبك توا: <b style="color:var(--gold2)">#${myRank}</b> من ${arr.length} — يتحدّث مباشرة!` : `${arr.length} مشارك — يتحدّث مباشرة!`;
@@ -735,7 +756,7 @@ $("#startBtn").onclick=()=>{ sClick(); const nm=$("#nameInput").value.trim(); if
   if(!S.name){ toast("✍️ اكتب اسمك الأول!"); $("#nameInput").focus(); return; }
   save(); updateHUD(); buildMap(); show("scMap"); };
 $("#resetBtn").onclick=()=>{ if(confirm("متأكد تبي تبدا من جديد؟ بتنمسح كل نقاطك وتقدّمك.")){
-  localStorage.removeItem(KEY); S={ name:"",points:0,streak:0,bestStreak:0,correct:0,answered:0,stage:0,unlocked:1,stars:{},done:{} };
+  localStorage.removeItem(KEY); S=blankState("");
   $("#nameInput").value=""; refreshStartUI(); updateHUD(); toast("🔄 بداية جديدة!"); } };
 $("#toStartBtn").onclick=()=>{ sClick(); refreshStartUI(); show("scStart"); };
 $("#backMapBtn").onclick=()=>{ sClick(); buildMap(); show("scMap"); };
@@ -745,7 +766,7 @@ $("#endBoardBtn").onclick=()=>{ sClick(); openBoard(); };
 $("#boardBtn").onclick=()=>{ sClick(); openBoard(); };
 $("#boardBackBtn").onclick=()=>{ sClick(); buildMap(); show("scMap"); };
 $("#playAgainBtn").onclick=()=>{ if(confirm("تبي تلعب من جديد وتصفّر النقاط؟")){
-  const nm=S.name; localStorage.removeItem(KEY); S={ name:nm,points:0,streak:0,bestStreak:0,correct:0,answered:0,stage:0,unlocked:1,stars:{},done:{} };
+  const nm=S.name; localStorage.removeItem(KEY); S=blankState(nm);
   save(); updateHUD(); buildMap(); show("scMap"); } };
 $("#soundBtn").onclick=()=>{ soundOn=!soundOn; $("#soundBtn").textContent=soundOn?"🔊":"🔇"; if(soundOn) sClick(); };
 $("#timerBtn").onclick=()=>{ timerOn=!timerOn; localStorage.setItem("baytee_timer", timerOn?"on":"off");
