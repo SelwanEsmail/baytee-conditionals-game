@@ -710,7 +710,7 @@ function submitScore(){
   if(!fbReady||!S.name) return;
   try{ const accPct=S.answered?Math.round((S.correct/S.answered)*100):0, stars=Object.values(S.stars).reduce((a,b)=>a+b,0);
     db.ref("boards/"+CLASS_ID+"/"+DEVICE_ID).transaction(c=>{ const b=c||{};
-      return {name:S.name, points:Math.max(b.points||0,S.points), acc:accPct, stars:stars, done:Object.keys(S.done).length, mistakes:S.mistakes||0, wrong:S.wrong||{}, ts:Date.now()}; });
+      return {name:S.name, points:S.points, acc:accPct, stars:stars, done:Object.keys(S.done).length, mistakes:S.mistakes||0, wrong:S.wrong||{}, ts:Date.now()}; });
   }catch(e){ console.warn("submit:",e.message); }
 }
 let boardListening=false;
@@ -720,7 +720,7 @@ function openBoard(){
   submitScore(); list.innerHTML=`<div class="lbempty">⏳ جاري تحميل الترتيب...</div>`;
   if(!boardListening){ boardListening=true;
     db.ref("boards/"+CLASS_ID).on("value", snap=>{
-      const d=snap.val()||{}; const arr=Object.entries(d).map(([id,v])=>({id,...v})).sort((a,b)=>(b.points-a.points)||(a.ts-b.ts)); renderBoard(arr);
+      const d=snap.val()||{}; const arr=Object.entries(d).map(([id,v])=>({id,...v})).sort((a,b)=>((a.mistakes||0)-(b.mistakes||0))||((b.done||0)-(a.done||0))||((b.points||0)-(a.points||0))); renderBoard(arr);
     }, ()=>{ list.innerHTML=`<div class="lbempty">⚠️ ما قدرناش نقرا الترتيب. تأكّدي من قواعد قاعدة البيانات.</div>`; });
   }
 }
@@ -781,7 +781,7 @@ $("#endBoardBtn").onclick=()=>{ sClick(); openBoard(); };
 $("#boardBtn").onclick=()=>{ sClick(); openBoard(); };
 $("#boardBackBtn").onclick=()=>{ sClick(); buildMap(); show("scMap"); };
 $("#playAgainBtn").onclick=()=>{ if(confirm("تبي تلعب من جديد وتصفّر النقاط؟")){
-  const nm=S.name; localStorage.removeItem(KEY); S=blankState(nm);
+  const nm=S.name,_mk=S.mistakes||0,_wr=S.wrong||{}; localStorage.removeItem(KEY); S=blankState(nm); S.mistakes=_mk; S.wrong=_wr;
   save(); updateHUD(); buildMap(); show("scMap"); } };
 $("#soundBtn").onclick=()=>{ soundOn=!soundOn; $("#soundBtn").textContent=soundOn?"🔊":"🔇"; if(soundOn) sClick(); };
 $("#timerBtn").onclick=()=>{ timerOn=!timerOn; localStorage.setItem("baytee_timer", timerOn?"on":"off");
